@@ -1,157 +1,209 @@
-// pages/chat/chat.js
-const app = getApp()
-import { VhallChat } from '../sdk/vhall-mpsdk-chat-1.0.0.js'
+import VhallChat from '../../minisdk/vhall-mpsdk-chat-1.0.1'
+// import VhallChat from '../../sdk/main'
 Page({
-
   /**
    * 页面的初始数据
    */
   data: {
     newslist: [],
-    appId: '',
     accountId: '',
-    channelId: '',
-    token: ''
+    content: ''
   },
+  vhallChat: null,
+  chat: null,
   /**
    * 生命周期函数--监听页面加载
    */
-  onLoad: function (options) {
-    for (var key in options) {
-      if (this.data.hasOwnProperty(key)) {
-        var _d = {};
-        _d[key] = options[key];
-        this.setData(_d);
-      }
-    }
+  onLoad(options) {
     let users = new Set()
     let opt = {
-      appId: this.data.appId, 
-      channelId: this.data.channelId, 
-      accountId: this.data.accountId, 
-      token: this.data.token
-    };
-    VhallChat.createInstance(opt, (res) => {
-      this.chat = res.message;
-      // 监听聊天消息
-      this.chat.onChat((res) => {
-        if (res.type === VhallChat.TYPE_TEXT) {
-          var list = []
-          list = this.data.newslist
-          list.push({ content: res.text_content, type: res.type, nickName: res.user_id})
-          this.setData({
-            newslist: list
-          })
-          this.bottom()
-        }
-      });
-      // 获取在线人数列表，第一页，每页1000.仅做为演示参考
-      this.chat.getUserListInfo({ currPage: 1, pageSize: 1000 }, (s) => {
-        console.log(s)
-        s.data.list.forEach((user) => {
-          users.add(user);
+      appId: options.appId,
+      channelId: options.channelId,
+      accountId: options.accountId,
+      token: options.token
+    }
+    this.setData({ accountId: options.accountId })
+    this.vhallChat = new VhallChat()
+    this.vhallChat.createInstance(
+      opt,
+      res => {
+        this.chat = res.message
+        // 监听聊天消息
+        this.chat.onChat(res => {
+          switch (res.type) {
+            case this.vhallChat.TYPE_TEXT:
+              {
+                let list = []
+                list = this.data.newslist
+                list.push({ content: res.text_content, type: res.type, nickName: res.user_id })
+                this.setData({
+                  newslist: list
+                })
+                this.bottom()
+              }
+              break
+            case this.vhallChat.TYPE_DISABLE_ALL:
+              wx.showToast({ title: '全员禁言', icon: 'none' })
+              break
+            case this.vhallChat.TYPE_DISABLE:
+              if (res.user_id == this.data.accountId) {
+                wx.showToast({ title: '当前用户被禁言', icon: 'none' })
+              }
+              break
+            case this.vhallChat.TYPE_PERMIT_ALL:
+              wx.showToast({ title: '取消全员禁言', icon: 'none' })
+              break
+            case this.vhallChat.TYPE_PERMIT:
+              if (res.user_id == this.data.accountId) {
+                wx.showToast({ title: '当前用户取消禁言', icon: 'none' })
+              }
+              break
+            default:
+              break
+          }
         })
-        this.setData({
-          online_number: users.size
+        // 获取在线人数列表，第一页，每页1000.仅做为演示参考
+        this.chat.getOnlineInfo(
+          { currPage: 1, pageSize: 1000 },
+          s => {
+            s.data.list.forEach(user => {
+              users.add(user)
+            })
+            this.setData({
+              online_number: users.size
+            })
+            // 监听上线消息
+            this.chat.onJoin(res => {
+              users.add(res.user_id)
+              this.setData({
+                online_number: users.size
+              })
+              wx.showToast({
+                title: `用户 ${res.user_id} 已上线`,
+                icon: 'none',
+                duration: 2000
+              })
+            })
+            // 监听下线消息
+            this.chat.onLeave(res => {
+              users.delete(res.user_id)
+              this.setData({
+                online_number: users.size
+              })
+              wx.showToast({
+                title: `用户 ${res.user_id} 已下线`,
+                icon: 'none',
+                duration: 2000
+              })
+            })
+          },
+          e => {
+            wx.showToast({
+              title: `获取在线人数列表失败: ${e.msg}, ${e.code}`,
+              icon: 'none',
+              duration: 2000
+            })
+          }
+        )
+
+        this.chat.onClose(res => {
+          console.log('onClose', res)
         })
-        // 监听上线消息
-        this.chat.onJoin((res) => {
-          console.log(res)
-          users.add(res.user_id);
-          this.setData({
-            online_number: users.size
-          })
-          wx.showToast({
-            title: `用户 ${res.user_id} 已上线`,
-            icon: "none",
-            duration: 2000
-          })
-        });
-        // 监听下线消息
-        this.chat.onLeave((res) => {
-          console.log(res)
-          users.delete(res.user_id);
-          this.setData({
-            online_number: users.size
-          })
-          wx.showToast({
-            title: `用户 ${res.user_id} 已下线`,
-            icon: "none",
-            duration: 2000
-          })
-        });
-      }, (e) => {
+
+        this.chat.onTaskError(res => {
+          console.log('onTaskError', res)
+          // wx.showToast({ title: 'socket onError触发', icon: 'none' })
+        })
+        this.chat.connectFail(res => {
+          wx.showToast({ title: 'socket连接失败', icon: 'none' })
+        })
+        this.chat.reConnecting(() => {
+          wx.showToast({ title: 'socket正在重连', icon: 'none' })
+        })
+
+        this.chat.reConnected(res => {
+          wx.showToast({ title: 'socket重连成功', icon: 'none' })
+        })
+        this.chat.reConnectFail(res => {
+          wx.showToast({ title: 'socket重连失败', icon: 'none' })
+        })
+        // setTimeout(() => {
+        //   this.chat.setDisable({ type: 'disable_all', target_id: '' })
+        // }, 8000)
+      },
+      e => {
+        // 实例化失败
+        console.log(e)
         wx.showToast({
-          title: `获取在线人数列表失败: ${e.msg}, ${e.code}`,
-          icon: "none",
+          title: `实例化失败`,
+          icon: 'none',
           duration: 2000
         })
-      });
-    }, e => {
-      // 实例化失败
-      console.log(e);
-      wx.showToast({
-        title: `实例化失败`,
-        icon: "none",
-        duration: 2000
-      })
-    });
+      }
+    )
   },
   // 页面卸载
   onUnload() {
-    if (this.chat) {
-      this.chat.destroyInstance();
-      this.chat = null;
+    try {
+      this.chat.destroyInstance()
+    } catch (error) {
+      console.warn(error)
     }
+    this.chat = null
+    this.vhallChat = null
     wx.showToast({
       title: '连接已断开~',
-      icon: "none",
-      duration: 2000
+      icon: 'none'
     })
   },
   /**
    * 生命周期函数--监听页面隐藏
    */
-  onHide: function () {
-    if (this.chat) {
-      this.chat.destroyInstance();
-      this.chat = null;
+  onHide() {
+    try {
+      this.chat.destroyInstance()
+    } catch (error) {
+      console.warn(error)
     }
+    this.chat = null
+    this.vhallChat = null
     wx.showToast({
       title: '连接已断开~',
-      icon: "none",
-      duration: 2000
+      icon: 'none'
     })
-    wx.navigateBack({});
   },
   //事件处理函数
-  send: function () {
-    var flag = this
-    if (this.data.content.trim() == "") {
+  send() {
+    if (!this.data.content || this.data.content.trim() == '') {
       wx.showToast({
         title: '消息不能为空哦~',
-        icon: "none",
+        icon: 'none',
         duration: 2000
       })
     } else {
       if (!this.chat) {
-        return;
+        return
       }
       let msgBody = {
         data: this.data.content,
+        context: { nick_name: 'vhall' }
       }
       // 发送聊天消息
-      this.chat.emitChat(msgBody, (res) => {
-        this.cleanInput();
-      }, (e) => {
-        // 发送聊天消息失败
-        console.log(e);
-        wx.showToast({
-          title: `${e.msg}: ${e.code}`,
-          icon: "none",
-          duration: 2000
-        })
-      });
+      this.chat.emitChat(
+        msgBody,
+        () => {
+          this.cleanInput()
+        },
+        e => {
+          // 发送聊天消息失败
+          console.log(e)
+          wx.showToast({
+            title: `${e.msg}: ${e.code}`,
+            icon: 'none',
+            duration: 2000
+          })
+        }
+      )
     }
   },
   //监听input值的改变
@@ -161,15 +213,27 @@ Page({
     })
   },
   // 清空输入框消息
-  cleanInput: function() {
+  cleanInput() {
     this.setData({
-      content: ""
+      content: ''
     })
   },
   //聊天消息始终显示最底端
-  bottom: function () {
+  bottom() {
     this.setData({
       scrollTop: this.data.newslist.length * 1000
     })
   },
+  stopAll() {
+    this.chat.setDisable({ type: this.vhallChat.TYPE_DISABLE_ALL })
+  },
+  cancleAll() {
+    this.chat.setDisable({ type: this.vhallChat.TYPE_PERMIT_ALL })
+  },
+  stopCurrentUser() {
+    this.chat.setDisable({ type: this.vhallChat.TYPE_DISABLE, target_id: this.data.accountId })
+  },
+  cancleCurrentUser() {
+    this.chat.setDisable({ type: this.vhallChat.TYPE_PERMIT, target_id: this.data.accountId })
+  }
 })
