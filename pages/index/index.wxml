@@ -46,8 +46,4 @@
 <view class='btn-view'>
 	<button bindtap="gotoPush">进入聊天</button>
 </view>
-<view class='input-view-all'>
-	<view>版本号：1.0.1</view>
-	<view>开发日期：2020-03-18</view>
-</view>
 

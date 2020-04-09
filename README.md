@@ -25,7 +25,7 @@
 ### 使用方法
 
 ```javascript
-import VhallChat from '../../minisdk/vhall-mpsdk-chat-1.0.1'
+import VhallChat from '../../minisdk/vhall-mpsdk-chat-1.0.2'
 // 先实例化对象
 this.vhallChat = new VhallChat()
 /**

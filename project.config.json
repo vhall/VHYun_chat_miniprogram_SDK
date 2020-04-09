@@ -29,7 +29,7 @@
 		"enhance": true
 	},
 	"compileType": "miniprogram",
-	"libVersion": "2.10.3",
+	"libVersion": "2.10.4",
 	"appid": "wx3ffd7b403e1e0f6d",
 	"projectname": "vhall-mpsdk-chat",
 	"debugOptions": {
