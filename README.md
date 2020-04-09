@@ -29,21 +29,21 @@ import VhallChat from '../../minisdk/vhall-mpsdk-chat-1.0.1'
 // 先实例化对象
 this.vhallChat = new VhallChat()
 /**
-* 再调用实例化SDK方法，之后所有的方法均应该在createInstance的成功函数后执行
-* @param {Object} opt- 包括 appId、channelId、accountId、token
-* @param {function} 成功函数
-* @param {function} 失败函数
-*/
+ * 再调用实例化SDK方法，之后所有的方法均应该在createInstance的成功函数后执行
+ * @param {Object} opt- 包括 appId、channelId、accountId、token
+ * @param {function} 成功函数
+ * @param {function} 失败函数
+ */
 this.vhallChat.createInstance(
- opt,
- res => {
-   // 成功函数
-   this.chat = res.message
- },
- e => {
-   // 实例化失败
-   console.log(e)
- }
+  opt,
+  res => {
+    // 成功函数
+    this.chat = res.message
+  },
+  e => {
+    // 实例化失败
+    console.log(e)
+  }
 )
 
 /**
@@ -51,29 +51,35 @@ this.vhallChat.createInstance(
  * message消息体：
  * {
  * type: this.vhallChat.TYPE_TEXT, // 聊天消息类型，目前有文本类型、全部禁言、取消全部禁言、取消禁言、取消全部禁言
- * text_content: "", // 文本消息体
+ * text_content: "", // 文本消息体 - （废弃）请用data，和js-sdk保持一致
+ * data：'', // 同 text_content
  * user_id："", // 发送本消息的用户ID
  * context: {  // 自定义消息体
  *  nick_name: "", // 昵称信息
  *  avatar: "", // 头像信息
-* },
-* date_time: "2019-07-25 18:44:06", // 消息发送时间
-* }
-*
-*/
+ * },
+ * msgId：消息id
+ * date_time: "2019-07-25 18:44:06", // 消息发送时间
+ * }
+ *
+ */
 this.chat.onChat(message => {})
 /**
-* 监听自定义消息
-**/
-this.chat.onCustom(message => {
- console.log(message);
- // message 格式如下：
-message = {
- text_content: "", // 文本消息体
- user_id："", // 用户ID
- date_time: "2019-07-25 18:44:06", // 消息发送时间
-}
-});
+ * 监听自定义消息
+ * message消息体：
+ * {
+ * text_content: "", // 文本消息体 - （废弃）请用data，和普通聊天消息保持一致
+ * data：'', // 同 text_content
+ * user_id："", // 发送本消息的用户ID
+ * context: {  // 自定义消息体
+ *  nick_name: "", // 昵称信息
+ *  avatar: "", // 头像信息
+ * },
+ * msgId：消息id
+ * date_time: "2019-07-25 18:44:06", // 消息发送时间
+ * }
+ **/
+this.chat.onCustom(message => {})
 /**
 * 获取在线人数列表，第一页，每页1000.仅做为演示参考
 * @param {Object} currPage - 当前页
@@ -95,31 +101,31 @@ message = {
 *
 */
 this.chat.getOnlineInfo(
- { currPage: 1, pageSize: 1000 },
- s => {
-   // 成功函数
- },
- e => {
-   // 失败函数
- }
+  { currPage: 1, pageSize: 1000 },
+  s => {
+    // 成功函数
+  },
+  e => {
+    // 失败函数
+  }
 )
 /**
-* 监听上线消息
-* @param {function} callback 回调函数
-* message: {
-* user_id："", // 用户ID
-* date_time: "2019-07-25 18:44:06", // 上线时间
-* }
-*/
+ * 监听上线消息
+ * @param {function} callback 回调函数
+ * message: {
+ * user_id："", // 用户ID
+ * date_time: "2019-07-25 18:44:06", // 上线时间
+ * }
+ */
 this.chat.onJoin(message => {})
 /**
-* 监听下线消息
-* @param {function} callback 回调函数
-* message: {
-* user_id："", // 用户ID
-* date_time: "2019-07-25 18:44:06", // 上线时间
-* }
-*/
+ * 监听下线消息
+ * @param {function} callback 回调函数
+ * message: {
+ * user_id："", // 用户ID
+ * date_time: "2019-07-25 18:44:06", // 上线时间
+ * }
+ */
 this.chat.onLeave(res => {})
 
 /**
@@ -132,48 +138,48 @@ this.chat.onLeave(res => {})
  * res.code == 1006 && res.reason == "abnormal closure" - 服务关闭（部分安卓返回1005）
  * */
 this.chat.onClose(res => {
- console.log('onClose', res)
+  console.log('onClose', res)
 })
 /**
  * 小程序SocketTask onError事件和参数
  * 数据格式：{errMsg:错误信息}
  * */
 this.chat.onTaskError(res => {
- console.log('onTaskError', res)
+  console.log('onTaskError', res)
 })
 /**
  * wx.connectSocket fail
  * */
 this.chat.connectFail(res => {
- console.log('connectFail', res)
+  console.log('connectFail', res)
 })
 /**
-* 发送聊天消息
-* @param {object} params {data:"" // 聊天消息，字符串格式。必填, context:{} // 自定义消息，JSON格式。选填,inspection:true （Boolean） 选填，是否开启消息审查，默认开启}
-* @param {function} success 成功回调
-* @param {function} failure 失败回调
-* err 消息格式： { code: 错误码, message: "", data: {} }
-*/
-this.chat.emitChat(params, success=()=>{}, failure=(err)=>{})
+ * 发送聊天消息
+ * @param {object} params {data:"" // 聊天消息，字符串格式。必填, context:{} // 自定义消息，JSON格式。选填,inspection:true （Boolean） 选填，是否开启消息审查，默认开启}
+ * @param {function} success 成功回调
+ * @param {function} failure 失败回调
+ * err 消息格式： { code: 错误码, message: "", data: {} }
+ */
+this.chat.emitChat(params, (success = () => {}), (failure = err => {}))
 /**
-* 发送自定义消息
-* @param {Object} data - 消息体
-*/
-this.chat.emitCustom(data);
+ * 发送自定义消息
+ * @param {Object} data - 消息体
+ */
+this.chat.emitCustom(data)
 
 /**
-* 设置禁言操作
-* @param {object} opt - {type:'',target_id:''}
-* type 取值：
-* this.vhallChat.TYPE_DISABLE 禁言频道内某个用户的聊天（频道内单个用户的禁言）
-* this.vhallChat.TYPE_DISABLE_ALL 禁言整个频道的聊天（全员禁言）
-* this.vhallChat.TYPE_PERMIT 取消禁言频道内某个用户的聊天（取消频道内单个用户的禁言）
-* this.vhallChat.TYPE_PERMIT_ALL 取消禁言整个频道的聊天 （取消全员禁言）
-* target_id: 即accountId，针对单个用户时必传
-* @param {function} success 成功回调
-* @param {function} failure 失败回调
-*/
-this.chat.setDisable(opt, success = () => {}, failure = () => {})
+ * 设置禁言操作
+ * @param {object} opt - {type:'',target_id:''}
+ * type 取值：
+ * this.vhallChat.TYPE_DISABLE 禁言频道内某个用户的聊天（频道内单个用户的禁言）
+ * this.vhallChat.TYPE_DISABLE_ALL 禁言整个频道的聊天（全员禁言）
+ * this.vhallChat.TYPE_PERMIT 取消禁言频道内某个用户的聊天（取消频道内单个用户的禁言）
+ * this.vhallChat.TYPE_PERMIT_ALL 取消禁言整个频道的聊天 （取消全员禁言）
+ * target_id: 即accountId，针对单个用户时必传
+ * @param {function} success 成功回调
+ * @param {function} failure 失败回调
+ */
+this.chat.setDisable(opt, (success = () => {}), (failure = () => {}))
 /**
 * 获取历史聊天消息
 * @param {object} opt :{currPage,pageSize,startTime,endTime}
@@ -207,18 +213,18 @@ this.chat.setDisable(opt, success = () => {}, failure = () => {})
   }
  }
 */
-this.chat.getHistoryList(opt = {}, success = () => {}, failure = () => {})
+this.chat.getHistoryList((opt = {}), (success = () => {}), (failure = () => {}))
 
 /**
-*旧版error事件，不推荐使用
-* e:{
-*     user_id // 用户ID 即accountId
-*    }
-*/
-this.chat.onError(e=>{})
+ *旧版error事件，不推荐使用
+ * e:{
+ *     user_id // 用户ID 即accountId
+ *    }
+ */
+this.chat.onError(e => {})
 
 /**
  * 销毁实例
-*/
+ */
 this.chat.destroyInstance()
 ```

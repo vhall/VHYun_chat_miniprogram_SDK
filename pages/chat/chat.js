@@ -1,4 +1,4 @@
-import VhallChat from '../../minisdk/vhall-mpsdk-chat-1.0.1'
+import VhallChat from '../../minisdk/vhall-mpsdk-chat-1.0.2'
 // import VhallChat from '../../sdk/main'
 Page({
   /**
@@ -30,6 +30,7 @@ Page({
         this.chat = res.message
         // 监听聊天消息
         this.chat.onChat(res => {
+          console.log(res)
           switch (res.type) {
             case this.vhallChat.TYPE_TEXT:
               {
@@ -127,9 +128,9 @@ Page({
         this.chat.reConnectFail(res => {
           wx.showToast({ title: 'socket重连失败', icon: 'none' })
         })
-        // setTimeout(() => {
-        //   this.chat.setDisable({ type: 'disable_all', target_id: '' })
-        // }, 8000)
+        this.chat.onCustom(res => {
+          console.log(res)
+        })
       },
       e => {
         // 实例化失败
