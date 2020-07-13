@@ -94,6 +94,7 @@
 		<button size="mini" bind:tap="cancleAll">取消全员禁言</button>
 		<button size="mini" bind:tap="stopCurrentUser">禁言当前用户</button>
 		<button size="mini" bind:tap="cancleCurrentUser">取消禁言当前用户</button>
+		<button size="mini" bind:tap="reconnectSocket">手动重联</button>
 	</view>
 </view>
 

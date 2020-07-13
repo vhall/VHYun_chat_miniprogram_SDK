@@ -1,5 +1,7 @@
-import VhallChat from '../../minisdk/vhall-mpsdk-chat-1.0.2'
+// import VhallBase from '../../mpSdkBaseCopy/main'
 // import VhallChat from '../../sdk/main'
+import VhallBase from '../../minisdk/vhall-mpsdk-base-1.0.0'
+import VhallChat from '../../minisdk/vhall-mpsdk-chat-1.1.0'
 Page({
   /**
    * 页面的初始数据
@@ -9,12 +11,13 @@ Page({
     accountId: '',
     content: ''
   },
+  vhallBase: null,
   vhallChat: null,
   chat: null,
   /**
    * 生命周期函数--监听页面加载
    */
-  onLoad(options) {
+  async onLoad(options) {
     let users = new Set()
     let opt = {
       appId: options.appId,
@@ -23,135 +26,146 @@ Page({
       token: options.token
     }
     this.setData({ accountId: options.accountId })
+    this.vhallBase = new VhallBase()
     this.vhallChat = new VhallChat()
-    this.vhallChat.createInstance(
-      opt,
-      res => {
-        this.chat = res.message
-        // 监听聊天消息
-        this.chat.onChat(res => {
-          console.log(res)
-          switch (res.type) {
-            case this.vhallChat.TYPE_TEXT:
-              {
-                let list = []
-                list = this.data.newslist
-                list.push({ content: res.text_content, type: res.type, nickName: res.user_id })
-                this.setData({
-                  newslist: list
-                })
-                this.bottom()
-              }
-              break
-            case this.vhallChat.TYPE_DISABLE_ALL:
-              wx.showToast({ title: '全员禁言', icon: 'none' })
-              break
-            case this.vhallChat.TYPE_DISABLE:
-              if (res.user_id == this.data.accountId) {
-                wx.showToast({ title: '当前用户被禁言', icon: 'none' })
-              }
-              break
-            case this.vhallChat.TYPE_PERMIT_ALL:
-              wx.showToast({ title: '取消全员禁言', icon: 'none' })
-              break
-            case this.vhallChat.TYPE_PERMIT:
-              if (res.user_id == this.data.accountId) {
-                wx.showToast({ title: '当前用户取消禁言', icon: 'none' })
-              }
-              break
-            default:
-              break
-          }
-        })
-        // 获取在线人数列表，第一页，每页1000.仅做为演示参考
-        this.chat.getOnlineInfo(
-          { currPage: 1, pageSize: 1000 },
-          s => {
-            s.data.list.forEach(user => {
-              users.add(user)
-            })
+    try {
+      await this.vhallBase.createInstance(opt)
+      const { message } = await this.vhallChat.createInstance({ ...opt, vhallBase: this.vhallBase })
+      this.chat = message
+      this.addEventListener(users)
+      this.onNetworkStatusChange()
+    } catch (error) {
+      console.log(error)
+      wx.showToast({
+        title: `实例化失败`,
+        icon: 'none',
+        duration: 2000
+      })
+    }
+  },
+  addEventListener(users) {
+    this.getOnlineInfo(users)
+    // 监听聊天消息
+    this.chat.on(this.vhallChat.EVENT_CHAT, res => {
+      switch (res.type) {
+        case this.vhallChat.TYPE_TEXT:
+          {
+            let list = []
+            list = this.data.newslist
+            list.push({ content: res.text_content, type: res.type, nickName: res.user_id })
             this.setData({
-              online_number: users.size
+              newslist: list
             })
-            // 监听上线消息
-            this.chat.onJoin(res => {
-              users.add(res.user_id)
-              this.setData({
-                online_number: users.size
-              })
-              wx.showToast({
-                title: `用户 ${res.user_id} 已上线`,
-                icon: 'none',
-                duration: 2000
-              })
-            })
-            // 监听下线消息
-            this.chat.onLeave(res => {
-              users.delete(res.user_id)
-              this.setData({
-                online_number: users.size
-              })
-              wx.showToast({
-                title: `用户 ${res.user_id} 已下线`,
-                icon: 'none',
-                duration: 2000
-              })
-            })
-          },
-          e => {
-            wx.showToast({
-              title: `获取在线人数列表失败: ${e.msg}, ${e.code}`,
-              icon: 'none',
-              duration: 2000
-            })
+            this.bottom()
           }
-        )
+          break
+        case this.vhallChat.TYPE_DISABLE_ALL:
+          wx.showToast({ title: '全员禁言', icon: 'none' })
+          break
+        case this.vhallChat.TYPE_DISABLE:
+          if (res.user_id == this.data.accountId) {
+            wx.showToast({ title: '当前用户被禁言', icon: 'none' })
+          }
+          break
+        case this.vhallChat.TYPE_PERMIT_ALL:
+          wx.showToast({ title: '取消全员禁言', icon: 'none' })
+          break
+        case this.vhallChat.TYPE_PERMIT:
+          if (res.user_id == this.data.accountId) {
+            wx.showToast({ title: '当前用户取消禁言', icon: 'none' })
+          }
+          break
+        default:
+          break
+      }
+    })
+    this.chat.on(this.vhallChat.EVENT_CLOSE, res => {
+      console.log('onClose 触发', res)
+    })
 
-        this.chat.onClose(res => {
-          console.log('onClose', res)
-        })
+    this.chat.on(this.vhallChat.EVENT_ERROR, res => {
+      console.log('onTaskError 触发', res)
+    })
+    this.chat.on(this.vhallChat.CONNECTFAIL, res => {
+      console.log('socket连接失败', res)
+      wx.showToast({ title: 'socket连接失败', icon: 'none' })
+    })
+    this.chat.on(this.vhallChat.RECONNECTING, () => {
+      console.log('socket正在重连')
+      wx.showToast({ title: 'socket正在重连', icon: 'none' })
+    })
 
-        this.chat.onTaskError(res => {
-          console.log('onTaskError', res)
-          // wx.showToast({ title: 'socket onError触发', icon: 'none' })
-        })
-        this.chat.connectFail(res => {
-          wx.showToast({ title: 'socket连接失败', icon: 'none' })
-        })
-        this.chat.reConnecting(() => {
-          wx.showToast({ title: 'socket正在重连', icon: 'none' })
-        })
+    this.chat.on(this.vhallChat.RECONNECTED, res => {
+      console.log('socket重连成功')
+      wx.showToast({ title: 'socket重连成功', icon: 'none' })
+    })
 
-        this.chat.reConnected(res => {
-          wx.showToast({ title: 'socket重连成功', icon: 'none' })
+    this.chat.on(this.vhallChat.RECONNECTFAIL, res => {
+      console.log('socket重连失败')
+      wx.showToast({ title: 'socket重连失败', icon: 'none' })
+    })
+    this.chat.on(this.vhallChat.EVENT_CUSTOM, res => {
+      console.log(res)
+    })
+  },
+  /**
+   * 获取在线人数列表，第一页，每页1000.仅做为演示参考
+   */
+  getOnlineInfo(users) {
+    this.chat
+      .getOnlineInfo({ currPage: 1, pageSize: 1000 })
+      .then(s => {
+        s.data.list.forEach(user => {
+          users.add(user)
         })
-        this.chat.reConnectFail(res => {
-          wx.showToast({ title: 'socket重连失败', icon: 'none' })
+        this.setData({
+          online_number: users.size
         })
-        this.chat.onCustom(res => {
-          console.log(res)
+        // 监听上线消息
+        this.chat.on(this.vhallChat.EVENT_JOIN, res => {
+          console.log('chat', res)
+          users.add(res.user_id)
+          this.setData({
+            online_number: users.size
+          })
+          wx.showToast({
+            title: `用户 ${res.user_id} 已上线`,
+            icon: 'none',
+            duration: 2000
+          })
         })
-      },
-      e => {
-        // 实例化失败
-        console.log(e)
+        // 监听下线消息
+        this.chat.on(this.vhallChat.EVENT_LEAVE, res => {
+          users.delete(res.user_id)
+          this.setData({
+            online_number: users.size
+          })
+          wx.showToast({
+            title: `用户 ${res.user_id} 已下线`,
+            icon: 'none',
+            duration: 2000
+          })
+        })
+      })
+      .catch(e => {
         wx.showToast({
-          title: `实例化失败`,
+          title: `获取在线人数列表失败: ${e.msg}, ${e.code}`,
           icon: 'none',
           duration: 2000
         })
-      }
-    )
+      })
   },
   // 页面卸载
   onUnload() {
     try {
-      this.chat.destroyInstance()
+      this.vhallChat.destroy()
+      wx.offNetworkStatusChange()
     } catch (error) {
       console.warn(error)
     }
     this.chat = null
     this.vhallChat = null
+    this.vhallBase = null
     wx.showToast({
       title: '连接已断开~',
       icon: 'none'
@@ -160,19 +174,7 @@ Page({
   /**
    * 生命周期函数--监听页面隐藏
    */
-  onHide() {
-    try {
-      this.chat.destroyInstance()
-    } catch (error) {
-      console.warn(error)
-    }
-    this.chat = null
-    this.vhallChat = null
-    wx.showToast({
-      title: '连接已断开~',
-      icon: 'none'
-    })
-  },
+  onHide() {},
   //事件处理函数
   send() {
     if (!this.data.content || this.data.content.trim() == '') {
@@ -190,12 +192,12 @@ Page({
         context: { nick_name: 'vhall' }
       }
       // 发送聊天消息
-      this.chat.emitChat(
-        msgBody,
-        () => {
+      this.chat
+        .emitChat(msgBody)
+        .then(() => {
           this.cleanInput()
-        },
-        e => {
+        })
+        .catch(e => {
           // 发送聊天消息失败
           console.log(e)
           wx.showToast({
@@ -203,8 +205,7 @@ Page({
             icon: 'none',
             duration: 2000
           })
-        }
-      )
+        })
     }
   },
   //监听input值的改变
@@ -236,5 +237,38 @@ Page({
   },
   cancleCurrentUser() {
     this.chat.setDisable({ type: this.vhallChat.TYPE_PERMIT, target_id: this.data.accountId })
+  },
+  onNetworkStatusChange() {
+    wx.onNetworkStatusChange(({ isConnected, networkType }) => {
+      console.log('监测到网络变化：', isConnected, networkType)
+      if (isConnected) {
+        // if (this.networkType == 'wifi' && networkType != 'wifi') {
+        // 从 wifi 切到 4g socket会 断开 触发 1006，因部分服务端断开的情况也触发该状态码，sdk无法分辨进行自动重联，故需要手动重联
+        setTimeout(() => {
+          // 延迟1s是为了避免在开发者工具上报错
+          this.reconnectSocket()
+        }, 1000)
+
+        // }
+      }
+      this.networkType = networkType
+    })
+  },
+  async reconnectSocket() {
+    // this.vhallBase
+    //   .initiativeReconnect()
+    //   .then(() => {
+    //     console.log('vhallBase then 触发')
+    //     this.vhallChat.initiativeReconnect()
+    //   })
+    //   .catch(() => {
+    //     console.log('vhallBase catch 触发')
+    //   })
+    try {
+      await this.vhallBase.initiativeReconnect()
+      await this.vhallChat.initiativeReconnect()
+    } catch (error) {
+      console.log(error)
+    }
   }
 })

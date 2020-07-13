@@ -1,6 +1,6 @@
 ## 微吼云聊天小程序 sdk
 
-当前版本对原有的 sdk 进行了精简并增加了一些监听函数，之前的方法名称未更改
+更新了监听聊天消息的使用方式，抽离了base
 
 ### 目录结构
 
@@ -14,26 +14,59 @@
 
 ### 消息类型
 
-| 名称                            | 含义               |
-| ------------------------------- | ------------------ |
-| this.vhallChat.TYPE_TEXT        | 文本消息           |
-| this.vhallChat.TYPE_DISABLE_ALL | 全员禁言           |
-| this.vhallChat.TYPE_DISABLE     | 某个用户被禁言     |
-| this.vhallChat.TYPE_PERMIT_ALL  | 取消全员禁言       |
-| this.vhallChat.TYPE_PERMIT      | 某个用户被取消禁言 |
+| 名称                            | 含义                              |
+| ------------------------------- | --------------------------------- |
+| this.vhallChat.TYPE_TEXT        | 文本消息                          |
+| this.vhallChat.TYPE_DISABLE_ALL | 全员禁言                          |
+| this.vhallChat.TYPE_DISABLE     | 某个用户被禁言                    |
+| this.vhallChat.TYPE_PERMIT_ALL  | 取消全员禁言                      |
+| this.vhallChat.TYPE_PERMIT      | 某个用户被取消禁言                |
+| this.vhallChat.EVENT_CHAT       | 聊天消息                          |
+| this.vhallChat.EVENT_CLOSE      | 微信socket onClose消息            |
+| this.vhallChat.EVENT_ERROR      | 微信socket onError消息            |
+| this.vhallChat.CONNECTFAIL      | 微信socket connectSocket fail消息 |
+| this.vhallChat.RECONNECTING     | 微信socket 正在重联时触发         |
+| this.vhallChat.RECONNECTED      | 微信socket 重联成功触发           |
+| this.vhallChat.RECONNECTFAIL    | 微信socket 重联失败触发           |
+| this.vhallChat.EVENT_CUSTOM     | 自定义消息                        |
+| this.vhallChat.EVENT_JOIN       | 用户加入房间消息                  |
+| this.vhallChat.EVENT_LEAVE      | 用户离开房间消息                  |
+
+
 
 ### 使用方法
 
 ```javascript
-import VhallChat from '../../minisdk/vhall-mpsdk-chat-1.0.2'
+import VhallBase from '../../minisdk/vhall-mpsdk-base-1.0.0'
+import VhallChat from '../../minisdk/vhall-mpsdk-chat-1.1.0'
 // 先实例化对象
+const vhallBase = new VhallBase()
 this.vhallChat = new VhallChat()
 /**
- * 再调用实例化SDK方法，之后所有的方法均应该在createInstance的成功函数后执行
- * @param {Object} opt- 包括 appId、channelId、accountId、token
+ * 先调用实例化vhallBase sdk方法，待其实例化成功后
+ * 再调用实例化vhallChat SDK方法，之后所有的方法均应该在createInstance的成功函数后执行
+ * createInstance 方法返回promise，推荐使用promise方式，不要使用原来的回调地狱式写法
+ * @param {Object} opt- 包括 appId、channelId、accountId、token、vhallBase
  * @param {function} 成功函数
  * @param {function} 失败函数
+ * 推荐：
  */
+try {
+  await vhallBase.createInstance(opt)
+  const { message } = await this.vhallChat.createInstance({ ...opt, vhallBase })
+  this.chat = message
+  this.addEventListener(users)
+} catch (error) {
+  console.log(error)
+  wx.showToast({
+    title: `实例化失败`,
+    icon: 'none',
+    duration: 2000
+  })
+}
+/**
+ * 旧写法，计划在之后的版本中删除：
+*/
 this.vhallChat.createInstance(
   opt,
   res => {
@@ -63,6 +96,13 @@ this.vhallChat.createInstance(
  * }
  *
  */
+/**
+ * 推荐写法：
+ */
+this.chat.on(this.vhallChat.EVENT_CHAT, res => {})
+/**
+ * 旧写法（不推荐）：
+ */
 this.chat.onChat(message => {})
 /**
  * 监听自定义消息
@@ -79,6 +119,13 @@ this.chat.onChat(message => {})
  * date_time: "2019-07-25 18:44:06", // 消息发送时间
  * }
  **/
+/**
+ * 推荐写法：
+ */
+this.chat.on(this.vhallChat.EVENT_CUSTOM, res => {})
+/**
+ * 旧写法（不推荐）：
+ */
 this.chat.onCustom(message => {})
 /**
 * 获取在线人数列表，第一页，每页1000.仅做为演示参考
@@ -100,6 +147,13 @@ this.chat.onCustom(message => {})
  }
 *
 */
+/**
+ * 推荐写法：
+ */
+this.chat.getOnlineInfo({ currPage: 1, pageSize: 1000 }).then(s=>{}).catch(e=>{})
+/**
+ * 旧写法（不推荐）：
+ */
 this.chat.getOnlineInfo(
   { currPage: 1, pageSize: 1000 },
   s => {
@@ -112,19 +166,33 @@ this.chat.getOnlineInfo(
 /**
  * 监听上线消息
  * @param {function} callback 回调函数
- * message: {
+ * res: {
  * user_id："", // 用户ID
  * date_time: "2019-07-25 18:44:06", // 上线时间
  * }
  */
-this.chat.onJoin(message => {})
+/**
+ * 推荐写法：
+ */
+this.chat.on(this.vhallChat.EVENT_JOIN, res => {})
+/**
+ * 旧写法（不推荐）：
+ */
+this.chat.onJoin(res => {})
 /**
  * 监听下线消息
  * @param {function} callback 回调函数
- * message: {
+ * res: {
  * user_id："", // 用户ID
  * date_time: "2019-07-25 18:44:06", // 上线时间
  * }
+ */
+/**
+ * 推荐写法：
+ */
+this.chat.on(this.vhallChat.EVENT_LEAVE, res => {})
+/**
+ * 旧写法（不推荐）：
  */
 this.chat.onLeave(res => {})
 
@@ -137,6 +205,13 @@ this.chat.onLeave(res => {})
  * res.code == 1001 && res.reason == "Stream end encountered" - 服务端拒绝连接
  * res.code == 1006 && res.reason == "abnormal closure" - 服务关闭（部分安卓返回1005）
  * */
+/**
+ * 推荐写法：
+ */
+this.chat.on(this.vhallChat.EVENT_CLOSE, res => {})
+/**
+ * 旧写法（不推荐）：
+ */
 this.chat.onClose(res => {
   console.log('onClose', res)
 })
@@ -144,12 +219,24 @@ this.chat.onClose(res => {
  * 小程序SocketTask onError事件和参数
  * 数据格式：{errMsg:错误信息}
  * */
+/**
+ * 推荐写法：
+ */
+this.chat.on(this.vhallChat.EVENT_ERROR, res => {})
+/**
+ * 旧写法（不推荐）：
+ */
 this.chat.onTaskError(res => {
   console.log('onTaskError', res)
 })
 /**
  * wx.connectSocket fail
+ * 推荐写法：
  * */
+this.chat.on(this.vhallChat.CONNECTFAIL, res => {})
+/**
+ * 旧写法（不推荐）：
+ */
 this.chat.connectFail(res => {
   console.log('connectFail', res)
 })
@@ -160,12 +247,19 @@ this.chat.connectFail(res => {
  * @param {function} failure 失败回调
  * err 消息格式： { code: 错误码, message: "", data: {} }
  */
+/**
+ * 推荐写法：
+ */
+this.chat.emitChat(params).then().catch()
+/**
+ * 旧写法（不推荐）：
+ */
 this.chat.emitChat(params, (success = () => {}), (failure = err => {}))
 /**
  * 发送自定义消息
  * @param {Object} data - 消息体
  */
-this.chat.emitCustom(data)
+this.chat.emitCustom(data).then().catch()
 
 /**
  * 设置禁言操作
@@ -178,6 +272,13 @@ this.chat.emitCustom(data)
  * target_id: 即accountId，针对单个用户时必传
  * @param {function} success 成功回调
  * @param {function} failure 失败回调
+ */
+/**
+ * 推荐写法：
+ */
+this.chat.setDisable(opt).then().catch()
+/**
+ * 旧写法（不推荐）：
  */
 this.chat.setDisable(opt, (success = () => {}), (failure = () => {}))
 /**
@@ -213,15 +314,14 @@ this.chat.setDisable(opt, (success = () => {}), (failure = () => {}))
   }
  }
 */
-this.chat.getHistoryList((opt = {}), (success = () => {}), (failure = () => {}))
-
 /**
- *旧版error事件，不推荐使用
- * e:{
- *     user_id // 用户ID 即accountId
- *    }
+ * 推荐写法：
  */
-this.chat.onError(e => {})
+this.chat.getHistoryList((opt).then().catch()
+/**
+ * 旧写法（不推荐）：
+ */
+this.chat.getHistoryList((opt = {}), (success = () => {}), (failure = () => {}))
 
 /**
  * 销毁实例

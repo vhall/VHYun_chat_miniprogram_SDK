@@ -5,6 +5,8 @@ module.exports = {
   },
   extends: 'eslint:recommended',
   globals: {
+    App: true,
+    getApp: true,
     Page: true,
     wx: true,
     module: true,
