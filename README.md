@@ -1,6 +1,10 @@
 ## 微吼云聊天小程序 sdk
 
-更新了监听聊天消息的使用方式，抽离了base
+更新了监听聊天消息的使用方式，抽离了 base
+
+### 扫码体验
+
+- ![](https://static.vhallyun.com/doc-images/5d7efa99b7fbd_5d7efa99.jpg)
 
 ### 目录结构
 
@@ -14,25 +18,23 @@
 
 ### 消息类型
 
-| 名称                            | 含义                              |
-| ------------------------------- | --------------------------------- |
-| this.vhallChat.TYPE_TEXT        | 文本消息                          |
-| this.vhallChat.TYPE_DISABLE_ALL | 全员禁言                          |
-| this.vhallChat.TYPE_DISABLE     | 某个用户被禁言                    |
-| this.vhallChat.TYPE_PERMIT_ALL  | 取消全员禁言                      |
-| this.vhallChat.TYPE_PERMIT      | 某个用户被取消禁言                |
-| this.vhallChat.EVENT_CHAT       | 聊天消息                          |
-| this.vhallChat.EVENT_CLOSE      | 微信socket onClose消息            |
-| this.vhallChat.EVENT_ERROR      | 微信socket onError消息            |
-| this.vhallChat.CONNECTFAIL      | 微信socket connectSocket fail消息 |
-| this.vhallChat.RECONNECTING     | 微信socket 正在重联时触发         |
-| this.vhallChat.RECONNECTED      | 微信socket 重联成功触发           |
-| this.vhallChat.RECONNECTFAIL    | 微信socket 重联失败触发           |
-| this.vhallChat.EVENT_CUSTOM     | 自定义消息                        |
-| this.vhallChat.EVENT_JOIN       | 用户加入房间消息                  |
-| this.vhallChat.EVENT_LEAVE      | 用户离开房间消息                  |
-
-
+| 名称                            | 含义                                |
+| ------------------------------- | ----------------------------------- |
+| this.vhallChat.TYPE_TEXT        | 文本消息                            |
+| this.vhallChat.TYPE_DISABLE_ALL | 全员禁言                            |
+| this.vhallChat.TYPE_DISABLE     | 某个用户被禁言                      |
+| this.vhallChat.TYPE_PERMIT_ALL  | 取消全员禁言                        |
+| this.vhallChat.TYPE_PERMIT      | 某个用户被取消禁言                  |
+| this.vhallChat.EVENT_CHAT       | 聊天消息                            |
+| this.vhallChat.EVENT_CLOSE      | 微信 socket onClose 消息            |
+| this.vhallChat.EVENT_ERROR      | 微信 socket onError 消息            |
+| this.vhallChat.CONNECTFAIL      | 微信 socket connectSocket fail 消息 |
+| this.vhallChat.RECONNECTING     | 微信 socket 正在重联时触发          |
+| this.vhallChat.RECONNECTED      | 微信 socket 重联成功触发            |
+| this.vhallChat.RECONNECTFAIL    | 微信 socket 重联失败触发            |
+| this.vhallChat.EVENT_CUSTOM     | 自定义消息                          |
+| this.vhallChat.EVENT_JOIN       | 用户加入房间消息                    |
+| this.vhallChat.EVENT_LEAVE      | 用户离开房间消息                    |
 
 ### 使用方法
 
